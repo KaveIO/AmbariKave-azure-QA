@@ -1,111 +1,159 @@
+// Copyright 2016 KPMG Advisory N.V. (unless otherwise stated)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.kpmg.koa.qa.marketplace;
 
-import static org.junit.Assert.fail;
-
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.TimeoutException;
 
-import java.util.concurrent.TimeUnit;
-
-public class MarketplaceProvisioningTest {
-  private WebDriver driver;
-  private String baseUrl;
-  private StringBuffer verificationErrors = new StringBuffer();
-
-  private String user = System.getProperty("AzureSiteUser");
-  private String pass = System.getProperty("AzureSitePass");
-
-  private void initialize() {
-    driver = new FirefoxDriver();
-    baseUrl = "https://portal.azure.com/#create/kave.io-previewkave-analytics-platform";
-    driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-  }
-
-  private void login() {
-    driver.get(baseUrl);
-
-    driver.findElement(By.id("cred_userid_inputtext")).clear();
-    driver.findElement(By.id("cred_userid_inputtext")).sendKeys(user);
-    driver.findElement(By.id("cred_keep_me_signed_in_checkbox")).click();
-    driver.findElement(By.id("mso_account_tile_link")).click();
-
-
-    driver.findElement(By.id("i0116")).clear();
-    driver.findElement(By.id("i0116")).sendKeys(user);
-    driver.findElement(By.id("i0118")).clear();
-    driver.findElement(By.id("i0118")).sendKeys(pass);
-
-    driver.findElement(By.id("idSIButton9")).click();
-  }
+@RunWith(Parameterized.class)
+public class MarketplaceProvisioningTest extends MarketplaceProvisioningParametrizedRunner {
 
   /**
-   * Sets up the web driver for Firefox configuring a proper timeout and attempts the login on
-   * Azure.
+   * Instantiates the deployment tests runner.
+   * 
+   * @param num Iteration number, string for convenience
+   * @param subscription The Microsoft Azure subscription ID
+   * @param dataCenter The target data center, eg West Europe
+   * 
    */
-  @Before
-  public void setUp() throws Exception {
-    initialize();
-    login();
+  public MarketplaceProvisioningTest(String num, String subscription, String subscriptionCode,
+      String dataCenter) {
+    super("test" + num, num, subscription, subscriptionCode, dataCenter,
+        "https://portal.azure.com/#create/kave.iokave-analytics-platform", 120);
+  }
+
+  private void clickCreate() {
+    clickOk("20");
+  }
+
+  private void selectEditableComboValue(String num, String value) {
+    insertFieldValue(By.name(String.format("__azc-editableCombo%s", num)), value);
+  }
+
+  private void insertKaveAdmin(String admin) {
+    insertTextBoxValue("2", admin);
+  }
+
+  private void insertKaveAdminPass(String pass) {
+    insertFieldValue(By.xpath("//input[@type='password']"), pass);
+    insertFieldValue(By.xpath("(//input[@type='password'])[3]"), pass);
+  }
+
+  private void selectSubscription(String subscription) {
+    selectEditableComboValue("0", subscription);
+  }
+
+  private void insertResourceGroup(String rg) {
+    insertTextBoxValue("3", rg);
+  }
+
+  private void selectDataCenter(String dc) {
+    selectEditableComboValue("1", dc);
+  }
+
+  private void clickOk(String num) {
+    safeClick(By.xpath(String.format("(//button[@type='button'])[%s]", num)));
+  }
+
+  private void configure(String num) {
+    click(By.xpath(String.format("(//*[starts-with(@id,'azc-selector-guid')])[%s]", num)));
+  }
+
+  private void configureStorageAccount() {
+    configure("1");
+  }
+
+  private void insertStorageAccountName(String name) {
+    insertTextBoxValue("4", name);
+  }
+
+  private void configurePremiumStorageAccount() {
+    configure("4");
+  }
+
+  private void insertPremiumStorageAccountName(String name) {
+    insertTextBoxValue("5", name);
+  }
+
+  private void configurePublicIp() {
+    configure("1");
+  }
+
+  private void insertIpName(String name) {
+    insertTextBoxValue("7", name);
+  }
+
+  private void insertDnsPrefix(String prefix) {
+    insertTextBoxValue("6", prefix);
+  }
+
+  private void configureBasics() {
+    insertKaveAdmin(kaveAdmin);
+    insertKaveAdminPass(kavePass);
+    selectSubscription(subscription);
+    insertResourceGroup(resourceGroup);
+    selectDataCenter(dataCenter);
+    clickOk("29");
+  }
+
+  private void configureStorage() {
+    configureStorageAccount();
+    insertStorageAccountName(storageAccountName);
+    clickOk("34");
+    configurePremiumStorageAccount();
+    insertPremiumStorageAccountName(premiumStorageAccountName);
+    clickOk("34");
+    clickOk("29");
+  }
+
+  private void configureDnsNameLabel() {
+    configurePublicIp();
+    insertIpName(ipName);
+    clickOk("39");
+    insertDnsPrefix(dnsPrefix);
+    clickOk("29");
+  }
+
+  private void configureVirtualMachines() {
+    clickOk("29");
+  }
+
+  private void viewSummary() {
+    try {
+      clickOk("30");
+    } catch (TimeoutException te) {
+      clickOk("29");
+    }
+  }
+
+  private void buy() {
+    clickOk("29");
   }
 
   @Test
   public void testAmbariKaveAzureQa() throws Exception {
-    // driver.get(baseUrl + "/#create/kave.io-previewkave-analytics-platform");
-    // driver.findElement(By.xpath("(//button[@type='button'])[20]")).click();
-
-
-
-    // driver.findElement(By.name("__azc-textBox3")).clear();
-    // driver.findElement(By.name("__azc-textBox3")).sendKeys("kaveadmin");
-    // driver.findElement(By.xpath("//input[@type='password']")).clear();
-    // driver.findElement(By.xpath("//input[@type='password']")).sendKeys("KavePassword01");
-    // driver.findElement(By.xpath("(//input[@type='password'])[3]")).clear();
-    // driver.findElement(By.xpath("(//input[@type='password'])[3]")).sendKeys("KavePassword01");
-    // driver.findElement(By.name("__azc-textBox4")).clear();
-    // driver.findElement(By.name("__azc-textBox4")).sendKeys("selenium-prova-xxx");
-    // driver.findElement(By.xpath("(//button[@type='button'])[34]")).click();
-    // driver.findElement(By.id("azc-selector-guid-0ac385c8-bddb-4582-a141-034bc81e62c3-value"))
-    // .click();
-    // driver.findElement(By.name("__azc-textBox4")).click();
-    // driver.findElement(By.name("__azc-textBox4")).click();
-    // driver.findElement(By.name("__azc-textBox4")).clear();
-    // driver.findElement(By.name("__azc-textBox4")).sendKeys("sasasssdsdsd");
-    // driver.findElement(By.xpath("(//button[@type='button'])[39]")).click();
-    // driver.findElement(By.id("azc-selector-guid-0ac385c8-bddb-4582-a141-034bc81e62c7-value"))
-    // .click();
-    // driver.findElement(By.name("__azc-textBox5")).clear();
-    // driver.findElement(By.name("__azc-textBox5")).sendKeys("cccddrgffddhhhggccx");
-    // driver.findElement(By.xpath("(//button[@type='button'])[39]")).click();
-    // driver.findElement(By.xpath("(//button[@type='button'])[34]")).click();
-    // driver.findElement(By.name("__azc-textBox6")).clear();
-    // driver.findElement(By.name("__azc-textBox6")).sendKeys("somedns");
-    // driver.findElement(By.id("azc-selector-guid-0ac385c8-bddb-4582-a141-034bc81e6357-value"))
-    // .click();
-    // driver.findElement(By.name("__azc-textBox7")).clear();
-    // driver.findElement(By.name("__azc-textBox7")).sendKeys("myipdddaaaw");
-    // driver.findElement(By.xpath("(//button[@type='button'])[44]")).click();
-    // driver.findElement(By.xpath("(//button[@type='button'])[34]")).click();
-    // driver.findElement(By.xpath("(//button[@type='button'])[34]")).click();
-    // driver.findElement(By.xpath("(//button[@type='button'])[34]")).click();
-  }
-
-  /**
-   * Wrap-up hook, we close the closable; this should kill the browser too.
-   * 
-   * @throws Exception In case something goes (really) wrong when closing down.
-   */
-  @After
-  public void tearDown() throws Exception {
-    // driver.close();
-    // driver.quit();
-    String verificationErrorString = verificationErrors.toString();
-    if (!"".equals(verificationErrorString)) {
-      fail(verificationErrorString);
-    }
+    clickCreate();
+    configureBasics();
+    configureStorage();
+    configureDnsNameLabel();
+    configureVirtualMachines();
+    viewSummary();
+    buy();
   }
 
 }
